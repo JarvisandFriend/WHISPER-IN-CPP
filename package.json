@@ -1,0 +1,8 @@
+{
+  "name": "WHISPER-IN-CPP",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/JarvisandFriend/WHISPER-IN-CPP",
+  "author": "Marcus <jarvisandfriend@gmail.com>",
+  "license": "MIT"
+}
