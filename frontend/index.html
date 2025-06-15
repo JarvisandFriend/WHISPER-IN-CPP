@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Audio Transcriber</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-lg bg-gray-800 p-6 rounded-xl shadow-lg">
+    <h1 class="text-2xl font-bold mb-4 text-center">Audio Transcription</h1>
+    <form id="uploadForm" class="space-y-4">
+      <label class="block">
+        <span class="text-sm text-gray-300">Upload Audio File</span>
+        <input type="file" id="audioFile" accept="audio/*" required class="mt-1 block w-full text-sm text-white bg-gray-700 border border-gray-600 rounded-lg p-2" />
+      </label>
+      <button type="submit" class="flex items-center justify-center w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg">
+        <i class="fas fa-upload mr-2"></i> Transcribe
+      </button>
+    </form>
+    <div id="result" class="mt-6 p-4 bg-gray-700 rounded hidden">
+      <h2 class="text-lg font-semibold mb-2">Transcription</h2>
+      <pre id="transcriptionText" class="whitespace-pre-wrap text-sm"></pre>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('uploadForm');
+    const resultBox = document.getElementById('result');
+    const transcriptionText = document.getElementById('transcriptionText');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById('audioFile');
+      const file = fileInput.files[0];
+
+      if (!file) return alert('Please select a file.');
+
+      const formData = new FormData();
+      formData.append('audio', file);
+
+      try {
+        const res = await fetch('/transcribe', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!res.ok) throw new Error('Failed to transcribe.');
+
+        const data = await res.json();
+        transcriptionText.textContent = data.transcription || '[No transcription returned]';
+        resultBox.classList.remove('hidden');
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    });
+  </script>
+</body>
+</html>
+
