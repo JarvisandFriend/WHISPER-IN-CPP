@@ -1,0 +1,14 @@
+.file-input {
+  display: block;
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+}
+
+.file-input:focus {
+  outline: 2px solid #2563eb;
+  border-color: #2563eb;
+}
+

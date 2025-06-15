@@ -2,60 +2,49 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Audio Transcriber</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Whisper Transcriber</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  <script src="https://kit.fontawesome.com/yourkit.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
-  <div class="w-full max-w-lg bg-gray-800 p-6 rounded-xl shadow-lg">
-    <h1 class="text-2xl font-bold mb-4 text-center">Audio Transcription</h1>
-    <form id="uploadForm" class="space-y-4">
-      <label class="block">
-        <span class="text-sm text-gray-300">Upload Audio File</span>
-        <input type="file" id="audioFile" accept="audio/*" required class="mt-1 block w-full text-sm text-white bg-gray-700 border border-gray-600 rounded-lg p-2" />
-      </label>
-      <button type="submit" class="flex items-center justify-center w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg">
-        <i class="fas fa-upload mr-2"></i> Transcribe
-      </button>
-    </form>
-    <div id="result" class="mt-6 p-4 bg-gray-700 rounded hidden">
-      <h2 class="text-lg font-semibold mb-2">Transcription</h2>
-      <pre id="transcriptionText" class="whitespace-pre-wrap text-sm"></pre>
-    </div>
-  </div>
+<body class="bg-gray-100 text-gray-900 font-sans">
+  <header class="bg-white shadow-md px-6 py-4">
+    <h1 class="text-2xl font-semibold flex items-center gap-2">
+      <i class="fas fa-brain text-blue-500"></i> Whisper Transcriber
+    </h1>
+    <p class="text-sm text-gray-500">Built on Whisper.cpp | Fast. Offline. Real.</p>
+  </header>
 
-  <script>
-    const form = document.getElementById('uploadForm');
-    const resultBox = document.getElementById('result');
-    const transcriptionText = document.getElementById('transcriptionText');
+  <main class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
+    <!-- Upload Panel -->
+    <section class="bg-white border border-gray-200 p-6 rounded-lg shadow-sm space-y-4">
+      <h2 class="text-xl font-medium flex items-center gap-2">
+        <i class="fas fa-upload text-blue-500"></i> Upload Audio
+      </h2>
+      <form id="uploadForm" class="space-y-4">
+        <input id="audioInput" type="file" accept="audio/*" class="file-input w-full" />
+        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition flex items-center justify-center gap-2">
+          <i class="fas fa-microphone"></i> Transcribe
+        </button>
+      </form>
+      <div id="loading" class="text-sm text-gray-500 hidden">
+        <i class="fas fa-spinner fa-spin"></i> Transcribing...
+      </div>
+    </section>
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const fileInput = document.getElementById('audioFile');
-      const file = fileInput.files[0];
+    <!-- Transcription Output -->
+    <section class="bg-white border border-gray-200 p-6 rounded-lg shadow-sm">
+      <h2 class="text-xl font-medium flex items-center gap-2 mb-2">
+        <i class="fas fa-file-alt text-green-600"></i> Transcription Result
+      </h2>
+      <pre id="transcription" class="bg-gray-50 border border-gray-300 p-4 rounded text-sm whitespace-pre-wrap h-[350px] overflow-y-auto text-gray-700">
+Upload an audio file to begin transcription.
+      </pre>
+    </section>
+  </main>
 
-      if (!file) return alert('Please select a file.');
-
-      const formData = new FormData();
-      formData.append('audio', file);
-
-      try {
-        const res = await fetch('/transcribe', {
-          method: 'POST',
-          body: formData
-        });
-
-        if (!res.ok) throw new Error('Failed to transcribe.');
-
-        const data = await res.json();
-        transcriptionText.textContent = data.transcription || '[No transcription returned]';
-        resultBox.classList.remove('hidden');
-      } catch (err) {
-        alert('Error: ' + err.message);
-      }
-    });
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
 
