@@ -4,5 +4,8 @@
   "main": "index.js",
   "repository": "https://github.com/JarvisandFriend/WHISPER-IN-CPP",
   "author": "Marcus <jarvisandfriend@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "fluent-ffmpeg": "^2.1.3"
+  }
 }
