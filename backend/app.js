@@ -2,108 +2,67 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const { exec } = require("child_process");
+const { spawn } = require("child_process");
 const ffmpeg = require("fluent-ffmpeg");
 const cors = require("cors");
 
 const app = express();
-app.use(express.static(path.join(__dirname, '..', 'frontend')));
 app.use(cors());
+app.use(express.static(path.join(__dirname, "..", "frontend")));
 
 const port = 3000;
-const upload = multer({ dest: "uploads/" });
+const uploadDir = path.join(__dirname, "uploads");
+const upload = multer({ dest: uploadDir });
 
-// Convert to WAV (mono, 16kHz)
-const convertToWav = (inputPath, outputPath) => {
-  return new Promise((resolve, reject) => {
-    console.log(`🎙️ Starting FFmpeg conversion...`);
-    console.log(`Input: ${inputPath}`);
-    console.log(`Output: ${outputPath}`);
-
+// Convert audio to WAV (mono, 16kHz)
+const convertToWav = (inputPath, outputPath) =>
+  new Promise((resolve, reject) => {
     ffmpeg(inputPath)
       .outputOptions(["-ac 1", "-ar 16000", "-acodec pcm_s16le"])
-      .on("start", cmdLine => console.log("🔧 FFmpeg command:", cmdLine))
-      .on("end", () => {
-        console.log("✅ FFmpeg conversion completed.");
-        resolve(outputPath);
-      })
-      .on("error", (err) => {
-        console.error("❌ FFmpeg error:", err.message);
-        reject(err);
-      })
+      .on("end", () => resolve(outputPath))
+      .on("error", err => reject(err))
       .save(outputPath);
-  });
-};
+});
 
-// Whisper endpoint
+// Whisper CLI and model
+const whisperCli = path.join(__dirname, "..", "whisper.cpp", "build", "bin", "whisper-cli");
+const whisperModel = path.join(__dirname, "..", "whisper.cpp", "models", "ggml-base.en.bin");
+
 app.post("/transcribe", upload.single("audio"), async (req, res) => {
-  console.log("📥 Received transcription request");
+  if (!req.file) return res.status(400).send("No audio file received.");
 
-  if (!req.file) {
-    console.error("❌ No audio file received in request.");
-    return res.status(400).send("No audio file received.");
-  }
-
-  console.log("📄 File received:", {
-    originalname: req.file.originalname,
-    mimetype: req.file.mimetype,
-    size: req.file.size + " bytes",
-    path: req.file.path
-  });
+  const originalPath = req.file.path;
+  const wavPath = `${originalPath}.wav`;
+  const txtPath = `${wavPath}.txt`;
 
   try {
-    const filePath = req.file.path;
-    const wavPath = `${filePath}.wav`;
+    await convertToWav(originalPath, wavPath);
 
-    console.log("🔄 Converting uploaded audio to WAV...");
-    await convertToWav(filePath, wavPath);
+    const whisper = spawn(whisperCli, ["-m", whisperModel, "-f", wavPath, "-otxt"]);
 
-    const modelPath = "./whisper.cpp/models/ggml-base.en.bin";
-    const transcribeCmd = `./whisper.cpp/build/bin/whisper-cli -m ${modelPath} -f ${wavPath} -otxt`;
-
-    console.log("🚀 Running Whisper...");
-    console.log("Whisper CMD:", transcribeCmd);
-
-    exec(transcribeCmd, (err, stdout, stderr) => {
-      console.log("📤 Whisper STDOUT:", stdout || "(no stdout)");
-      console.error("📛 Whisper STDERR:", stderr || "(no stderr)");
-
-      if (err) {
-        console.error("❌ Whisper process failed:", err.message);
-        return res.status(500).send("Transcription failed.");
+    whisper.on("close", code => {
+      if (code !== 0) {
+        cleanup();
+        return res.status(500).send("Whisper failed.");
       }
 
-      const txtPath = `${wavPath}.txt`;
-      console.log(`📄 Looking for output text: ${txtPath}`);
-
-      fs.readFile(txtPath, "utf8", (err, data) => {
-        if (err) {
-          console.error("❌ Error reading Whisper output:", err.message);
-          return res.status(500).send("Text read error.");
-        }
-
-        const result = data.trim();
-        console.log("📝 Transcription:", result || "(empty)");
-
-        // Cleanup
-        try {
-          fs.unlinkSync(filePath);
-          fs.unlinkSync(wavPath);
-          fs.unlinkSync(txtPath);
-          console.log("🧹 Temp files cleaned.");
-        } catch (cleanupErr) {
-          console.warn("⚠️ Cleanup error:", cleanupErr.message);
-        }
-
-        res.send({ transcription: result });
-      });
+      const transcription = fs.readFileSync(txtPath, "utf8").trim();
+      cleanup();
+      res.send({ transcription });
     });
-  } catch (error) {
-    console.error("🔥 Unexpected error during transcription:", error.message);
+
+    // Optional: capture stderr to debug silently
+    whisper.stderr.on("data", () => {});
+
+    function cleanup() {
+      [originalPath, wavPath, txtPath].forEach(file => {
+        if (fs.existsSync(file)) fs.unlinkSync(file);
+      });
+    }
+  } catch (err) {
+    [originalPath, wavPath, txtPath].forEach(file => fs.existsSync(file) && fs.unlinkSync(file));
     res.status(500).send("Internal error.");
   }
 });
 
-app.listen(port, () => {
-  console.log(`✅ API running at: http://localhost:${port}`);
-});
+app.listen(port, () => {});
