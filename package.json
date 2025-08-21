@@ -6,6 +6,7 @@
   "author": "Marcus <jarvisandfriend@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "fluent-ffmpeg": "^2.1.3"
+    "fluent-ffmpeg": "^2.1.3",
+    "whisper-node": "^1.1.1"
   }
 }

@@ -50,6 +50,15 @@
             <i class="fas fa-microphone-alt"></i> Transcribe
           </button>
         </form>
+
+        <!-- Mic Recording Button -->
+        <button id="fa-mic" class="mt-4 text-gray-700 text-xl hover:text-red-600">
+          <i class="fas fa-microphone"></i> Record & Transcribe
+        </button>
+
+        <!-- Hidden textarea (used in recording output) -->
+        <textarea id="textarea" class="mt-4 w-full p-2 border rounded hidden"></textarea>
+
         <div id="loader" class="mt-4 hidden text-indigo-600">
           <i class="fas fa-spinner fa-spin mr-2"></i> Transcribing...
         </div>
@@ -110,6 +119,89 @@
       }
     });
   </script>
+
+  <script>
+    let mediaRecorder;
+    let chunks = [];
+    let isRecording = false;
+    const micButton = document.getElementById('fa-mic');
+    const textarea = document.getElementById('textarea');
+
+    const loaderSpinner = document.createElement("div");
+    loaderSpinner.style.position = "fixed";
+    loaderSpinner.style.bottom = "100px";
+    loaderSpinner.style.right = "80px";
+    loaderSpinner.style.width = "30px";
+    loaderSpinner.style.height = "30px";
+    loaderSpinner.style.border = "3px solid #ccc";
+    loaderSpinner.style.borderTop = "3px solid #000";
+    loaderSpinner.style.borderRadius = "50%";
+    loaderSpinner.style.animation = "spin 1s linear infinite";
+    loaderSpinner.style.display = "none";
+    document.body.appendChild(loaderSpinner);
+
+    const style = document.createElement("style");
+    style.innerHTML = `
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }`;
+    document.head.appendChild(style);
+
+    micButton.addEventListener('click', async () => {
+      if (!isRecording) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+        mediaRecorder.ondataavailable = e => {
+          chunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          const blob = new Blob(chunks, { type: 'audio/webm' });
+          chunks = [];
+
+          loaderSpinner.style.display = "block";
+          micButton.style.opacity = "0.5";
+
+          const formData = new FormData();
+          formData.append('audio', blob, 'voice.webm');
+
+          try {
+            const res = await fetch('http://localhost:3000/transcribe', {
+              method: 'POST',
+              body: formData
+            });
+
+            const result = await res.json();
+            textarea.classList.remove('hidden');
+            textarea.value = result.transcription || '';
+            textarea.style.height = "";
+            textarea.style.height = textarea.scrollHeight + "px";
+
+            resultText.textContent = result.transcription || 'No transcription received.';
+            const li = document.createElement('li');
+            li.textContent = result.transcription.slice(0, 50) + '...';
+            historyList.appendChild(li);
+
+          } catch (err) {
+            textarea.value = 'Transcription failed.';
+            console.error("Transcription error:", err);
+          }
+
+          loaderSpinner.style.display = "none";
+          micButton.style.opacity = "1.0";
+        };
+
+        mediaRecorder.start();
+        isRecording = true;
+        micButton.style.color = "red";
+      } else {
+        mediaRecorder.stop();
+        isRecording = false;
+        micButton.style.color = "black";
+      }
+    });
+  </script>
 </body>
 </html>
-

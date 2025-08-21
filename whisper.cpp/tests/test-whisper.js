@@ -8,7 +8,7 @@ factory().then(function(whisper) {
     //
     //   $ ffmpeg -i samples/jfk.wav -f f32le -acodec pcm_f32le samples/jfk.pcmf32
     //
-    let fname_wav   = "../samples/jfk.pcmf32";
+    let fname_wav   = "jarvis.pcmf32";
     let fname_model = "../models/ggml-base.en.bin";
 
     // init whisper
