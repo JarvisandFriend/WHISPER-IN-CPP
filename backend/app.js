@@ -58,8 +58,8 @@ app.post("/transcribe", upload.single("audio"), async (req, res) => {
     console.log("🔄 Converting uploaded audio to WAV...");
     await convertToWav(filePath, wavPath);
 
-    const modelPath = "../whisper.cpp/models/ggml-base.en.bin";
-    const transcribeCmd = `../whisper.cpp/build/bin/whisper-cli -m ${modelPath} -f ${wavPath} -otxt`;
+    const modelPath = "./whisper.cpp/models/ggml-base.en.bin";
+    const transcribeCmd = `./whisper.cpp/build/bin/whisper-cli -m ${modelPath} -f ${wavPath} -otxt`;
 
     console.log("🚀 Running Whisper...");
     console.log("Whisper CMD:", transcribeCmd);
